@@ -898,13 +898,251 @@ void Ret(){
 
 void valRet(){
 	if(c=='(' || c=='a' || c=='n' || c=='x' || c=='['){
-		
 		E();
 
-	}else if(c=='v'){
+	}else if(c=='{'){
+		c=getchar();
+		expCad();
+		if(c=='}'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+	}else if(c==';'){
 		return;
 	}else{
 		printf("** ERROR **\nEn la producción <valRet> se esperaba alguno de estos caracteres: ( a n x [ \n");
+		return;
+	}
+}
+
+void expCad(){
+	if(c=='a'){
+		c=getchar();
+		opCad();
+
+	}else if(c=='v'){
+		c=getchar();
+		opCad();
+	}else{
+		printf("** ERROR **\nEn la producción <expCad> se esperaba alguno de estos caracteres: a v \n");
+		return;
+	}
+}
+
+void opCad(){
+	if(c=='l'){
+		c=getchar();
+		expCad();
+
+	}else if(c=='h'){
+		c=getchar();
+		expCad();
+	}else if(c==']'){
+		return;
+	}else{
+		printf("** ERROR **\nEn la producción <opCad> se esperaba alguno de estos caracteres: l h ] \n");
+		return;
+	}
+}
+
+void Para(){
+	if(c=='p'){
+		c=getchar();
+		if(c=='a'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='['){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c=='n'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c==','){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='n'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c==']'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		listaS();
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+	}else{
+		error();
+		return;
+	}
+}
+
+void Trocar(){
+	if(c=='b'){
+		c=getchar();
+		if(c=='('){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='a'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c==')'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c==':'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c=='c'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='('){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='n'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='c'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c==')'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='{'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		listaS();
+		if(c=='}'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		casos();
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+	}else{
+		error();
+		return;
+	}
+}
+
+void Llama(){
+	if(c=='['){
+		c=getchar();
+		if(c=='a'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		if(c=='('){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		listP();
+
+		if(c==')'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c==']'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+	}else{
+		error();
 		return;
 	}
 }
