@@ -178,6 +178,7 @@ int numChar = 0;		// Variable auxiliar para almacenar el número de caracteres d
 unsigned char charToken;// Variable auxiliar para almacenar el valor en ascii
 int N=-1;				//Varuable para contar el número de caracteres en la cadena
 int size=0;				//VAriable aux para llevar conteo de índices de la cadena
+char c;
 
 //Creación de los arreglos de estructuras correspondientes a los catálogos.
 
@@ -736,6 +737,178 @@ int convierteInt(char cadena[]){
 	
 	return num;
 }
+
+/*Funciones 71 - 94*/
+
+// <Enq> -> q(<expLogica>)#<listaS># 
+void Enq(){
+	if(c=='q'){
+		c=getchar();
+		if(c=='('){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		expLogica();
+
+		if(c==')'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		listaS();
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+	}else{
+		error();
+		return:
+	}
+}
+
+void Se(){
+	if(c=='s'){
+		c=getchar();
+		if(c=='('){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		expLogica();
+
+		if(c==')'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		listaS();
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+	}else{
+		error();
+		return;
+	}
+}
+
+void Q(){
+	if(c=='u'){
+		c=getchar();
+		if(c==';'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+	}else{
+		error();
+	}
+}
+
+void Faz(){
+	if(c=='z'){
+		c=getchar();
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		listaS();
+
+		if(c=='#'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c=='q'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c=='('){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+
+		expLogica();
+
+		if(c==')'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+		if(c==';'){
+			c=getchar();
+		}else{
+			error();
+			return;
+		}
+	}else{
+		error();
+		return;
+	}
+}
+
+void Ret(){
+	if(c=='t'){
+		c=getchar();
+		
+		valRet();
+
+	}else{
+		error();
+		return;
+	}
+}
+
+void valRet(){
+	if(c=='(' || c=='a' || c=='n' || c=='x' || c=='['){
+		
+		E();
+
+	}else if(c=='v'){
+		return;
+	}else{
+		printf("** ERROR **\nEn la producción <valRet> se esperaba alguno de estos caracteres: ( a n x [ \n");
+		return;
+	}
+}
+//Función error en Analizador Sintactico
 
 /*
 ----------Función principal del programa-----------
