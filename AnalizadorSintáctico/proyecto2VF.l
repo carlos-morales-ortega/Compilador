@@ -1,15 +1,17 @@
 %{
 /********************************************************************
-************************* ANALIZADOR LÉXICO *************************
+*********************** ANALIZADOR SINTÁCTICO ***********************
 *********************************************************************
  - Autores:
  	- Morales Ortega Carlos
  	- Vélez Grande Cinthya
 
- - Fecha de elaboración: 2/10/2023
+ - Fecha de elaboración: 7/10/2023
 
- - Descripción: Este programa es un analizador léxico escrito en flex que 
- 	reconoce los componentes léxicos pertenecientes a las siguientes clases:
+ - Descripción: Este programa es un analizador Léxico y Sintáctico Descendente
+	Recursivo que revisa programas escritos en el lenguaje definido por la gramática
+	acordada en conjunto por el grupo de clase y la profesora; se encuentra escrito 
+	en flex y reconoce los componentes léxicos pertenecientes a las siguientes clases:
 
  	Clase 	Descripción
  		0 	Operadores aritméticos + - / * %
@@ -572,8 +574,11 @@ void imprimirListaIdent(struct listaIdentificadores lista){
 	}
 }
 
+
 /*
-------------------- FUNCIONES PARA GENERAR LA CADENA -----------------------
+------------------- FUNCIONES PARA GENERAR LA CADENA ----------------------
+ - addCadenaFinal: agrega al final de la cadena de átomos el carácter pasado como parámetro.
+---------------------------------------------------------------------------
 */
 
 void addCadenaFinal(char a){
@@ -741,7 +746,11 @@ int convierteInt(char cadena[]){
 
 
 /*
-------Función para retornar un carácter leído de la cadena de átomos------
+----------------- Funciones para implementar el Analizador Sintactico -----------------
+ - get_char: Función para retornar un carácter leído de la cadena de átomos.
+ - print_error: Función para mostrar un error sintáctico enviado como parámetro (apuntador a la cadena del mensaje).
+ - AnalizadorSintactico: Método que llama a la función correspondiente a la producción inicial de la gramática.
+ --------------------------------------------------------------------------------------
 */
 
 char get_char(){
@@ -753,9 +762,6 @@ char get_char(){
 	}
 }
 
-/*
-------Función para mostrar un error sintáctico------
-*/
 
 void print_error(char const *msj_error){
   printf("----------------------------\n");
@@ -765,12 +771,6 @@ void print_error(char const *msj_error){
   //c=get_char(); /*CHECAR*/
 }
 
-
-
-
-/*
-----------Funciones para implementar el Analizador Sintactico-----------
-*/
 
 void AnalizadorSintactico(){
 	c=get_char();
