@@ -173,12 +173,15 @@ void addCadenaFinal(char);
 /********** DECLARACIÓN DE VARIABLES, ARREGLOS, ESTRUCTURAS Y APUNTADORES GLOBALES **********/
 
 FILE *yyin;				// Apuntador al archivo de entrada para el analizador léxico.
+char *cadenaFinal;		//Apuntador a una cadena que representa la cadena de átomos
 int valorToken = 0;		// Variable auxiliar para guardar los valores de los tokens.
 int numChar = 0;		// Variable auxiliar para almacenar el número de caracteres de una cadena.
 unsigned char charToken;// Variable auxiliar para almacenar el valor en ascii
-int N=-1;				//Varuable para contar el número de caracteres en la cadena
-int size=0;				//VAriable aux para llevar conteo de índices de la cadena
-char c;
+int N=-1;				//Variable para contar el número de caracteres en la cadena
+int size=0;				//Variable auxiliar para llevar conteo de índices de la cadena
+int contadorErrores=0;	//Variable que lleva el conteo de errores sintácticos
+int indice=-1;			//Variable auxiliar para desplazar un índice sobre la cadena de átomos
+char c;					//Variable auxiliar para almacenar el átomo leído
 
 //Creación de los arreglos de estructuras correspondientes a los catálogos.
 
@@ -195,9 +198,6 @@ struct listaIdentificadores tablaDeSimbolos;	//Tabla de símbolos (para almacena
 struct listaCadenas tablaDeLiterales;			//Tabla de literales (para almacenar cadenas)
 struct ListaToken tablaToken;					//Tabla de tokens
 
-// Creación de cadena 
-char *cadenaFinal;
-
 
 %}
 
@@ -206,7 +206,7 @@ espacios [\t\n ]
 arit	(\+|-|\/|\*|%)
 log		(&&|\|\||!)
 rel		(>|<|=|!)=|>|<
-cteNum	({dig})*|(\((\+|-)({dig})+\)) 
+cteNum	({dig})+|(\((\+|-)({dig})+\)) 
 cad		(&|like)
 palRes	inteiro|enquanto|quebrar|retorno|para|trocar|assinado|se|fazer|caso|flutuador
 mayus	[A-Z]
@@ -738,415 +738,952 @@ int convierteInt(char cadena[]){
 	return num;
 }
 
-/*Funciones 71 - 94*/
+
+
+/*
+------Función para retornar un carácter leído de la cadena de átomos------
+*/
+
+char get_char(){
+  if(indice <= size){
+		indice++;
+		return cadenaFinal[indice];
+	}else{
+		return '$';
+	}
+}
+
+/*
+------Función para mostrar un error sintáctico------
+*/
+
+void print_error(char const *msj_error){
+  printf("----------------------------\n");
+  printf("** ERROR en el atomo %i: %c\n",indice,cadenaFinal[indice]);
+  printf(msj_error);
+  contadorErrores++;
+  //c=get_char(); /*CHECAR*/
+}
+
+
+
+
+/*
+----------Funciones para implementar el Analizador Sintactico-----------
+*/
+
+void AnalizadorSintactico(){
+	c=get_char();
+	Program();
+	
+	printf("----------------------------\n");
+	if(contadorErrores==0)
+		printf("-> El programa fuente analizado es sintacticamente corecto :)\n");
+	else
+		printf("-> El programa fuente analizado NO es sintacticamente corecto :(\n");
+	printf("----------------------------\n");
+}
+
+
+void Program(){
+	if(c=='f' || c=='i'|| c=='g'){
+		Func();
+		otraFunc();
+	}else{
+		print_error("En la produccion <Program> se esperaba alguno de estos atomos: f i g\n");
+		return;	
+	}
+}
+
+
+void otraFunc(){
+	if(c=='f' || c=='i'|| c=='g'){
+		Func();
+		otraFunc();
+	}else if(c=='$'){
+		return;
+	}else{
+		print_error("En la produccion <otraFunc> se esperaba alguno de estos atomos: f i g $\n");
+		return;	
+	}
+}
+
+
+void Func(){
+	if(c=='f' || c=='i'|| c=='g'){
+		TipoF();
+		
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <Func> se esperaba el atomo: a\n");
+
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Func> se esperaba el atomo: (\n");
+
+		listArg();
+
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Func> se esperaba el atomo: )\n");
+
+		if(c=='{')
+			c=get_char();
+		else
+			print_error("En la produccion <Func> se esperaba el atomo: {\n");
+
+		Cuerpo();
+
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <Func> se esperaba el atomo: }\n");
+	}else{
+		print_error("En la produccion <Func> se esperaba alguno de estos atomos: f i g\n");
+		return;	
+	}
+}
+
+
+void TipoF(){
+	if(c=='f' || c=='i'){
+		Tipo();
+	}else if(c=='g'){
+		c=get_char();
+	}else{
+		print_error("En la produccion <TipoF> se esperaba alguno de estos atomos: f i g\n");
+		return;	
+	}
+}
+
+
+void listArg(){
+	if(c=='f' || c=='i'){
+		Tipo();
+		
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <listArg> se esperaba el atomo: a\n");
+
+		otroArg();
+	}else if(c==')'){
+		return;
+	}else{
+		print_error("En la produccion <listArg> se esperaba alguno de estos atomos: f i )\n");
+		return;	
+	}
+}
+
+
+void otroArg(){
+	if(c==','){
+		c=get_char();
+
+		Tipo();
+		
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <otroArg> se esperaba el atomo: a\n");
+			
+		otroArg();
+	}else if(c==')'){
+		return;
+	}else{
+		print_error("En la produccion <otroArg> se esperaba alguno de estos atomos: , )\n");
+		return;	
+	}
+}
+
+
+void Cuerpo(){
+	if(c=='f' || c=='i'){
+		listDecl();
+		listaS();
+	}else{
+		print_error("En la produccion <Cuerpo> se esperaba alguno de estos atomos: f i\n");
+		return;	
+	}
+}
+
+
+void listDecl(){
+	if(c=='a' || c=='u' || c=='t' || c=='b' || c=='q' || c=='z' || c=='s' || c=='p' || c=='[' || c=='}'){
+		return;
+	}else if(c=='f' || c=='i'){
+		Decl();
+		listDecl();
+	}else{
+		print_error("En la produccion <listDecl> se esperaba alguno de estos atomos: f i a u t b q z s p [ }\n");
+		return;	
+	}
+}
+
+
+void Decl(){
+	if(c=='f' || c=='i'){
+		Tipo();
+		
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <Decl> se esperaba el atomo: a\n");
+			
+		valorIni();
+		listaVar();
+
+		if(c==';')
+			c=get_char();
+		else
+			print_error("En la produccion <Decl> se esperaba el atomo: ;\n");
+	}else{
+		print_error("En la produccion <Decl> se esperaba alguno de estos atomos: f i\n");
+		return;	
+	}
+}
+
+
+void Tipo(){
+	if(c=='f'){
+		c=get_char();
+	}else if(c=='i'){
+		c=get_char();
+	}else{
+		print_error("En la produccion <Tipo> se esperaba alguno de estos atomos: f i\n");
+		return;	
+	}
+}
+
+
+void valorIni(){
+	if(c=='='){
+		c=get_char();
+		tipoVal();
+	}else if(c==',' || c==';'){
+		return;
+	}else{
+		print_error("En la produccion <valorIni> se esperaba alguno de estos atomos: = , ;\n");
+		return;	
+	}
+}
+
+
+void listaVar(){
+	if(c==','){
+		c=get_char();
+		
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <listaVar> se esperaba el atomo: a\n");
+		
+		valorIni();
+		listaVar();
+	}else if(c==';'){
+		return;
+	}else{
+		print_error("En la produccion <listaVar> se esperaba alguno de estos atomos: , ;\n");
+		return;	
+	}
+}
+
+
+void tipoVal(){
+	if(c=='n'){
+		c=get_char();
+	}else if(c=='v'){
+		c=get_char();
+	}else{
+		print_error("En la produccion <tipoVal> se esperaba alguno de estos atomos: n v\n");
+		return;	
+	}
+}
+
+
+void Asig(){
+	if(c=='a'){
+		c=get_char();
+		
+		opArit();
+		E();
+		
+		if(c==';')
+			c=get_char();
+		else
+			print_error("En la produccion <Asig> se esperaba el atomo: ;\n");
+
+	}else if(c=='v'){
+		c=get_char();
+	}else{
+		print_error("En la produccion <Asig> se esperaba alguno de estos atomos: a v\n");
+		return;	
+	}
+}
+
+
+void opArit(){
+	if(c=='=' || c=='x' || c=='y' || c=='k' || c=='r' || c=='o'){
+		c=get_char();
+	}else{
+		print_error("En la produccion <opArit> se esperaba alguno de estos atomos: = x y k r o\n");
+		return;	
+	}
+}
+
+
+void E(){
+	if(c=='(' || c=='a' || c=='n' || c=='['){
+		T();
+		EP();
+	}else{
+		print_error("En la produccion <E> se esperaba alguno de estos atomos: ( a n [\n");
+		return;	
+	}
+}
+
+
+void EP(){
+	if(c==';' || c==')' || c=='>' || c=='<' || c=='e' || c=='d' || c=='m' || c=='w' || c=='h' || c=='j' || c==','){
+		return;
+	}else if(c=='+' || c=='-'){
+		c=get_char();
+		T();
+		EP();
+	}else{
+		print_error("En la produccion <EP> se esperaba alguno de estos atomos: + - ; ) > <  e d m w h j ,\n");
+		return;	
+	}
+}
+
+void T(){
+	if(c=='(' || c=='a' || c=='n' || c=='['){
+		F();
+		TP();
+	}else{
+		print_error("En la produccion <T> se esperaba alguno de estos atomos: ( a n [\n");
+		return;	
+	}
+}
+
+
+void TP(){
+	if(c=='+' || c=='-' || c==';' || c==')' || c=='>' || c=='<' || c=='e' || c=='d' || c=='m' || c=='w' || c=='h' || c=='j' || c==','){
+		return;
+	}else if(c=='*' || c=='/' || c=='%'){
+		c=get_char();
+		F();
+		TP();
+	}else{
+		print_error("En la produccion <TP> se esperaba alguno de estos atomos: * / % + - ; ) > <  e d m w h j ,\n");
+		return;	
+	}
+}
+
+void F(){
+	if(c=='('){
+		c=get_char();
+		
+		E();
+
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <F> se esperaba el atomo: )\n");
+
+	}else if(c=='a' || c=='n'){
+		c=get_char();
+	}else if(c=='['){
+		Llama();
+	}else{
+		print_error("En la produccion <F> se esperaba alguno de estos atomos: ( a n [\n");
+		return;	
+	}
+}
+
+
+void R(){
+	if(c=='(' || c=='a' || c=='n' || c=='['){
+		E();
+
+		opRel();
+
+		E();
+	}else{
+		print_error("En la produccion <R> se esperaba alguno de estos atomos: ( a n [\n");
+		return;	
+	}
+}
+
+
+void opRel(){
+	if(c=='>' || c=='<' || c=='e' || c=='d' || c=='m' || c=='w'){
+		c=get_char();
+		return;
+	}else{
+		print_error("En la produccion <opRel> se esperaba alguno de estos atomos: > < e d m w\n");
+		return;	
+	}
+}
+
+
+void Sent(){
+	if(c=='a'){
+		Asig();
+	}else if(c=='u'){
+		Q();
+	}else if(c=='t'){
+		Ret();
+	}else if(c=='b'){
+		Trocar();
+	}else if(c=='q'){
+		Enq();
+	}else if(c=='z'){
+		Faz();
+	}else if(c=='s'){
+		Se();
+	}else if(c=='p'){
+		Para();
+	}else if(c=='['){
+		Llama();
+	}else{
+		print_error("En la produccion <Sent> se esperaba alguno de estos atomos: a u t b q z s p [\n");
+		return;	
+	}
+}
+
+
+void listaS(){
+	if(c=='}' || c=='#'){
+		return;
+	}else if(c=='a' || c=='u' || c=='t' || c=='b' || c=='q' || c=='z' || c=='s' || c=='p' || c=='['){
+		Sent();
+		listaS();
+	}else{
+		print_error("En la produccion <listaS> se esperaba alguno de estos atomos: } # a u t b q z s p [\n");
+		return;	
+	}
+}
+
+
+void expLogica(){
+	if(c=='(' || c=='a' || c=='n' || c=='['){
+		R();
+		expLog();
+	}else if(c=='!'){
+		c=get_char();
+		expRel();
+	}else{
+		print_error("En la produccion <expLogica> se esperaba alguno de estos atomos: ! ( a n [\n");
+		return;	
+	}
+}
+
+
+void expLog(){
+	if(c=='h' || c=='j'){
+		opLog();
+		R();
+	}else if(c==')'){
+		return;
+	}else{
+		print_error("En la produccion <expLog> se esperaba alguno de estos atomos: h j )\n");
+		return;	
+	}
+}
+
+
+void expRel(){
+	if(c=='{'){
+		c=get_char();
+
+		R();
+		
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <expRel> se esperaba el atomo: }\n");
+
+	}else if(c=='(' || c=='a' || c=='n' || c=='['){
+		E();
+	}else{
+		print_error("En la produccion <expRel> se esperaba alguno de estos atomos: { ( a n [\n");
+		return;	
+	}
+}
+
+
+void opLog(){
+	if(c=='h' || c=='j'){
+		c=get_char();
+	}else{
+		print_error("En la produccion <opLog> se esperaba alguno de estos atomos: h j\n");
+		return;	
+	}
+}
+
 
 // <Enq> -> q(<expLogica>)#<listaS># 
 void Enq(){
 	if(c=='q'){
-		c=getchar();
-		if(c=='('){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Enq> se esperaba el atomo: (\n");
 
 		expLogica();
 
-		if(c==')'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Enq> se esperaba el atomo: )\n");
+		
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Enq> se esperaba el atomo: #\n");
 
 		listaS();
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Enq> se esperaba el atomo: #\n");
+		return;
 	}else{
-		error();
-		return:
+		print_error("En la produccion <Enq> se esperaba el atomo: q\n");
+		return;
 	}
 }
 
+//<Se> → s(<expLogica>)#<listaS>#
 void Se(){
 	if(c=='s'){
-		c=getchar();
-		if(c=='('){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Se> se esperaba el atomo: (\n");
 
 		expLogica();
 
-		if(c==')'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Se> se esperaba el atomo: )\n");
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Se> se esperaba el atomo: #\n");
 
 		listaS();
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Se> se esperaba el atomo: #\n");
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Se> se esperaba el atomo: s\n");
 		return;
 	}
 }
 
+//Q → u;
 void Q(){
 	if(c=='u'){
-		c=getchar();
-		if(c==';'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		if(c==';')
+			c=get_char();
+		else
+			print_error("En la produccion <Q> se esperaba el atomo: ;\n");
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Q> se esperaba el atomo: u\n");
 	}
 }
 
+//<Faz>→ z#<listas>#q(<expLogica>);
 void Faz(){
 	if(c=='z'){
-		c=getchar();
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Faz> se esperaba el atomo: #\n");
 
 		listaS();
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c=='q'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c=='('){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Faz> se esperaba el atomo: #\n");
+		if(c=='q')
+			c=get_char();
+		else
+			print_error("En la produccion <Faz> se esperaba el atomo: q\n");
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Faz> se esperaba el atomo: (\n");
 
 		expLogica();
 
-		if(c==')'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c==';'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Faz> se esperaba el atomo: )\n");
+		if(c==';')
+			c=get_char();
+		else
+			print_error("En la produccion <Faz> se esperaba el atomo: ;\n");
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Faz> se esperaba el atomo: z\n");
 		return;
 	}
 }
 
+//<Ret> → t<valRet>;
 void Ret(){
 	if(c=='t'){
-		c=getchar();
+		c=get_char();
 		
 		valRet();
 
+		if(c==';')
+			c=get_char();
+		else
+			print_error("En la produccion <Ret> se esperaba el atomo: ;\n");
+		
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Ret> se esperaba el atomo: t\n");
 		return;
 	}
 }
 
+//<valRet> → E
+//<valRet> → {<expCad>}
+//<valRet> → ξ
 void valRet(){
-	if(c=='(' || c=='a' || c=='n' || c=='x' || c=='['){
+	if(c=='(' || c=='a' || c=='n' || c=='['){
 		E();
-
+		return;
 	}else if(c=='{'){
-		c=getchar();
+		c=get_char();
 		expCad();
-		if(c=='}'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <valRet> se esperaba el atomo: }\n");
+		return;
 	}else if(c==';'){
 		return;
 	}else{
-		printf("** ERROR **\nEn la producción <valRet> se esperaba alguno de estos caracteres: ( a n x [ \n");
+		print_error("En la produccion <valRet> se esperaba alguno de estos atomos: ( a n [ { ;\n");
 		return;
 	}
 }
 
+//<expCad> → a<opCad>
+//<expCad> → v<opCad>
 void expCad(){
 	if(c=='a'){
-		c=getchar();
+		c=get_char();
 		opCad();
-
+		return;
 	}else if(c=='v'){
-		c=getchar();
+		c=get_char();
 		opCad();
+		return;
 	}else{
-		printf("** ERROR **\nEn la producción <expCad> se esperaba alguno de estos caracteres: a v \n");
+		print_error("En la produccion <expCad> se esperaba alguno de estos atomos: a v\n");
 		return;
 	}
 }
 
+//<opCad> → l <expCad>
+//<opCad> → h <expCad>
+//<opCad> → ξ
 void opCad(){
 	if(c=='l'){
-		c=getchar();
+		c=get_char();
 		expCad();
 
 	}else if(c=='h'){
-		c=getchar();
+		c=get_char();
 		expCad();
 	}else if(c==']'){
 		return;
 	}else{
-		printf("** ERROR **\nEn la producción <opCad> se esperaba alguno de estos caracteres: l h ] \n");
+		print_error("En la produccion <expCad> se esperaba alguno de estos atomos: l h ]\n");
 		return;
 	}
 }
 
+//<Para> → pa[n,n]#<listaS>#
 void Para(){
 	if(c=='p'){
-		c=getchar();
-		if(c=='a'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: a\n");
 
-		if(c=='['){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c=='n'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c==','){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='[')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: [\n");
+		if(c=='n')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: n\n");
+		if(c==',')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: ,\n");
 
-		if(c=='n'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c==']'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='n')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: n\n");
+		if(c==']')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: ]\n");
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: #\n");
 
 		listaS();
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Para> se esperaba el atomo: #\n");
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Para> se esperaba el atomo: p\n");
 		return;
 	}
 }
 
+//<Trocar> → b(a):#c(n){<listaS>}<casos>#
 void Trocar(){
 	if(c=='b'){
-		c=getchar();
-		if(c=='('){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: (\n");
 
-		if(c=='a'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c==')'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c==':'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: a\n");
+		
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: )\n");
+		
+		if(c==':')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: :\n");
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c=='c'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: #\n");
+		
+		if(c=='c')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: c\n");
 
-		if(c=='('){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: (\n");
 
-		if(c=='n'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='n')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: n\n");
 
-		if(c=='c'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: )\n");
 
-		if(c==')'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='{')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: {\n");
 
-		if(c=='{'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
 		listaS();
-		if(c=='}'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: }\n");
 
 		casos();
 
-		if(c=='#'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-
+		if(c=='#')
+			c=get_char();
+		else
+			print_error("En la produccion <Trocar> se esperaba el atomo: #\n");
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Trocar> se esperaba el atomo: b\n");
 		return;
 	}
 }
 
+//<casos> → ξ
+//<casos> → c(n){<listaS>}<casos>
+//<casos> → (){<listaS>}<casos>
+void casos(){
+	if(c=='c'){
+		c=get_char();
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: (\n");
+
+		if(c=='n')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: n\n");
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: )\n");
+		if(c=='{')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: {\n");
+		listaS();
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: }\n");
+		casos();
+		return;
+	}else if(c=='('){
+		c=get_char();
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: )\n");
+
+		if(c=='{')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: {\n");
+
+		listaS();
+
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <casos> se esperaba el atomo: }\n");
+		casos();
+		return;
+	}else if(c=='#'){
+		return;
+	}
+	else{
+		print_error("En la produccion <expCad> se esperaba alguno de estos atomos: c ( #\n");
+		return;
+	}
+}
+//<Llama> → [a(<listP>)]
 void Llama(){
 	if(c=='['){
-		c=getchar();
-		if(c=='a'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		c=get_char();
+		if(c=='a')
+			c=get_char();
+		else
+			print_error("En la produccion <Llama> se esperaba el atomo: a\n");
 
-		if(c=='('){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
+		if(c=='(')
+			c=get_char();
+		else
+			print_error("En la produccion <Llama> se esperaba el atomo: (\n");
 
 		listP();
 
-		if(c==')'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-		if(c==']'){
-			c=getchar();
-		}else{
-			error();
-			return;
-		}
-
+		if(c==')')
+			c=get_char();
+		else
+			print_error("En la produccion <Llama> se esperaba el atomo: )\n");
+		if(c==']')
+			c=get_char();
+		else
+			print_error("En la produccion <Llama> se esperaba el atomo: ]\n");
+		return;
 	}else{
-		error();
+		print_error("En la produccion <Llama> se esperaba el atomo: [\n");
 		return;
 	}
 }
-//Función error en Analizador Sintactico
+
+//<listP> → ξ
+//<listP> → E<Param>
+//<listP> → {<expCad>}<Param>
+void listP(){
+	if(c=='{'){
+		c=get_char();
+		expCad();
+		
+		if(c=='}')
+			c=get_char();
+		else
+			print_error("En la produccion <listP> se esperaba el atomo: }\n");
+		Param();
+		return;
+	}else if(c=='(' || c=='a' || c=='n' || c=='['){
+		E();
+		Param();
+		return;
+	}else if(c==')'){
+		return;
+	}
+	else{
+		print_error("En la produccion <listP> se esperaba alguno de estos atomos: ( a n [ { )");
+		return;
+	}
+}
+
+//<Param> → ,<listP>
+//<Param> → ξ
+void Param(){
+	if(c==','){
+		c=get_char();
+		listP();
+		return;
+	}else if(c==')'){
+		return;
+	}
+	else{
+		print_error("En la produccion <Param> se esperaba alguno de estos atomos: , )");
+		return;
+	}
+}
+
 
 /*
 ----------Función principal del programa-----------
@@ -1175,6 +1712,8 @@ int main(int argc, char *argv[]){
 		printf("Se abrio correctamente el archivo %s\n",argv[1]);
 		cadenaFinal = (char *)malloc(size * sizeof(char));
 		yylex();
+		addCadenaFinal('$');
+		AnalizadorSintactico();
 		mostrarTablas();
 		printf("\nCadena Generada: \n%s\n",cadenaFinal);
 		free(cadenaFinal);		
